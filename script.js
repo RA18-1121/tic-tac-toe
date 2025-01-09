@@ -1,5 +1,5 @@
 function Cell(){
-    let value = 0;
+    let value = null;
     const addToken = (token) => value = token;
     const getValue = () => value;
     return {addToken, getValue};
@@ -31,7 +31,7 @@ function Gameboard(){
 
     const placeMarker = (row, column, player) => {
         const selectedCell = board[row][column];
-        if(selectedCell.getValue() !== -1)
+        if(selectedCell.getValue() !== null)
             return;
         selectedCell.addToken(player.token);
     }
@@ -68,8 +68,40 @@ function GameController(){
 
     printNewRound();
 
-    return {playRound, getActivePlayer};
+    return {playRound, getActivePlayer, getBoard : board.getBoard};
 }
 
-const game = GameController();
-game.playRound(2, 2);
+function ScreenController(){
+    const game = GameController();
+
+    const turnContainer = document.querySelector(".turn");
+    const boardContainer = document.querySelector(".board");
+
+    const updateScreen = () => {
+        boardContainer.textContent = "";
+
+        const board = game.getBoard();
+        const activePlayer = game.getActivePlayer();
+
+        board.forEach((row, rowIndex) => {
+            row.forEach((cell, cellIndex) => {
+                const cellButton = document.createElement("button");
+                if(cell.getValue() !== null)
+                    cellButton.textContent = `${cell.getValue()}`;
+                cellButton.dataset.row = rowIndex;
+                cellButton.dataset.column = cellIndex;
+                cellButton.addEventListener("click", (e) => {
+                    game.playRound(e.target.dataset.row, e.target.dataset.column);
+                    updateScreen();
+                })
+                boardContainer.appendChild(cellButton);
+            })
+        })
+
+        turnContainer.textContent = `${activePlayer.playerName}'s turn`;
+    }
+
+    updateScreen();
+}
+
+ScreenController();
