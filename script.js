@@ -6,11 +6,12 @@ function Cell(){
 }
 
 function Player(){
-    let token = -1;
+    const tokenArray = ["0", "X"];
+    let index = -1;
     return function newPlayer(name){
-        token++;
+        index++;
         const playerName = name;
-        return {playerName, token};
+        return {playerName, token: tokenArray[index]};
     }
 }
 
@@ -59,11 +60,59 @@ function GameController(){
         console.log(`${getActivePlayer().playerName}'s turn`);
     }
 
+    const winCheck = () => {
+        const boardArray = board.getBoard();
+outerRowLoop:  for(let i = 0; i < 3; i++)
+            {
+                const mark = boardArray[i][0].getValue();
+                for(let j = 1; j < 3; j++)
+                {
+                    if(boardArray[i][j].getValue() === null)
+                        continue outerRowLoop;
+                    
+                    if(mark !== boardArray[i][j].getValue())
+                        continue outerRowLoop;
+                }
+                console.log(`${activePlayer.playerName} wins!`);
+                return activePlayer;
+            }
+
+outerColumnLoop:    for(let i = 0; i < 3; i++)
+                    {
+                        const mark = boardArray[0][i].getValue();
+                        for(let j = 1; j < 3; j++)
+                        {
+                            if(boardArray[j][i].getValue() === null)
+                                continue outerColumnLoop; 
+                            if(mark !== boardArray[j][i].getValue())
+                                continue outerColumnLoop;
+                        }
+                        console.log(`${activePlayer.playerName} wins!`);
+                        return activePlayer;
+                    }
+        let mark = boardArray[0][0].getValue();
+        if(mark === boardArray[1][1].getValue() && mark === boardArray[2][2].getValue() && mark !== null)
+        {
+            console.log(`${activePlayer.playerName} wins!`);
+            return activePlayer;
+        }
+
+        mark = boardArray[0][2].getValue();
+        if(mark === boardArray[1][1].getValue() && mark === boardArray[2][0].getValue() && mark !== null)
+        {
+            console.log(`${activePlayer.playerName} wins!`);
+            return activePlayer;
+        }
+    }
+
     const playRound = (row, column) => {
         console.log(`Dropping ${getActivePlayer().playerName}'s token on ${row} row and ${column} column`);
         board.placeMarker(row, column, getActivePlayer());
-        switchPlayer();
-        printNewRound();
+        if(winCheck() === undefined)
+        {
+            switchPlayer();
+            printNewRound();
+        }  
     }
 
     printNewRound();
@@ -76,6 +125,7 @@ function ScreenController(){
 
     const turnContainer = document.querySelector(".turn");
     const boardContainer = document.querySelector(".board");
+    const resultContainer = document.querySelector(".result");
 
     const updateScreen = () => {
         boardContainer.textContent = "";
