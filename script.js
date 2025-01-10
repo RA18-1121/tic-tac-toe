@@ -5,14 +5,9 @@ function Cell(){
     return {addToken, getValue};
 }
 
-function Player(){
-    const tokenArray = ["0", "X"];
-    let index = -1;
-    return function newPlayer(name){
-        index++;
-        const playerName = name;
-        return {playerName, token: tokenArray[index]};
-    }
+function Player(name, token){ 
+    const playerName = name;
+    return {playerName, token};
 }
 
 function Gameboard(){
@@ -44,10 +39,9 @@ function Gameboard(){
     return {getBoard, placeMarker, printBoard};
 }
 
-function GameController(){
-    const createPlayer = Player();
-    const firstPlayer = createPlayer("Rachit");
-    const secondPlayer = createPlayer("Agrawal");
+function GameController(playerOne = "Player One", playerTwo = "Player Two"){
+    const firstPlayer = Player(playerOne, "0");
+    const secondPlayer = Player(playerTwo, "X");
 
     const board = Gameboard();
 
@@ -117,15 +111,29 @@ outerColumnLoop:    for(let i = 0; i < 3; i++)
 
     printNewRound();
 
-    return {playRound, getActivePlayer, getBoard : board.getBoard};
+    return {playRound, getActivePlayer, getBoard : board.getBoard, winCheck};
 }
 
 function ScreenController(){
-    const game = GameController();
+    let game = GameController();
 
     const turnContainer = document.querySelector(".turn");
     const boardContainer = document.querySelector(".board");
     const resultContainer = document.querySelector(".result");
+    const startButton = document.querySelector(".start");
+    const playerOneInput = document.querySelector("#name-one");
+    const playerTwoInput = document.querySelector("#name-two");
+
+    startButton.addEventListener("click", () => {
+        const cells = document.querySelectorAll(".cell");
+        cells.forEach((cell) => cell.disabled = false);
+        const playerOneName = (playerOneInput.value || "Player One");
+        const playerTwoName = (playerTwoInput.value || "Player Two");
+        game = GameController(playerOneName, playerTwoName);
+        playerOneInput.value = "";
+        playerTwoInput.value = "";
+        updateScreen();
+    })
 
     const updateScreen = () => {
         boardContainer.textContent = "";
@@ -140,6 +148,7 @@ function ScreenController(){
                     cellButton.textContent = `${cell.getValue()}`;
                 cellButton.dataset.row = rowIndex;
                 cellButton.dataset.column = cellIndex;
+                cellButton.classList.add("cell");
                 cellButton.addEventListener("click", (e) => {
                     game.playRound(e.target.dataset.row, e.target.dataset.column);
                     updateScreen();
@@ -148,10 +157,26 @@ function ScreenController(){
             })
         })
 
-        turnContainer.textContent = `${activePlayer.playerName}'s turn`;
+        if(game.winCheck() === undefined)
+        {
+            turnContainer.textContent = `${activePlayer.playerName}'s turn`;
+            resultContainer.textContent = "";
+        }
+
+        else{
+            resultContainer.textContent = `${game.getActivePlayer().playerName} wins!`
+            const cells = document.querySelectorAll(".cell");
+            cells.forEach((cell) => {
+                cell.disabled = true;
+            })
+        }
     }
 
     updateScreen();
+    const cells = document.querySelectorAll(".cell");
+    cells.forEach((cell) => { 
+        cell.disabled = true;
+    })
 }
 
 ScreenController();
