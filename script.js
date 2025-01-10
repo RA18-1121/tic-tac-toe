@@ -25,101 +25,102 @@ function Gameboard(){
 
     const getBoard = () => board;
 
-    const placeMarker = (row, column, player) => {
+    const placetokener = (row, column, player) => {
         const selectedCell = board[row][column];
         if(selectedCell.getValue() !== null)
             return;
         selectedCell.addToken(player.token);
     }
 
-    const printBoard = () => {
-        console.log(board.map((row) => row.map((cell) => cell.getValue())));
-    }
-
-    return {getBoard, placeMarker, printBoard};
+    return {getBoard, placetokener};
 }
 
 function GameController(playerOne = "Player One", playerTwo = "Player Two"){
     const firstPlayer = Player(playerOne, "0");
     const secondPlayer = Player(playerTwo, "X");
-
     const board = Gameboard();
-
     let activePlayer = firstPlayer;
-    const switchPlayer = () => activePlayer === firstPlayer ? (activePlayer = secondPlayer) : (activePlayer = firstPlayer);
-    const getActivePlayer = () => activePlayer;
 
-    const printNewRound = () => {
-        board.printBoard();
-        console.log(`${getActivePlayer().playerName}'s turn`);
-    }
+    const switchPlayer = () => activePlayer === firstPlayer ? (activePlayer = secondPlayer) : (activePlayer = firstPlayer);
+
+    const getActivePlayer = () => activePlayer;
 
     const winCheck = () => {
         const boardArray = board.getBoard();
+        let match;
 outerRowLoop:  for(let i = 0; i < 3; i++)
-            {
-                const mark = boardArray[i][0].getValue();
-                for(let j = 1; j < 3; j++)
                 {
-                    if(boardArray[i][j].getValue() === null)
-                        continue outerRowLoop;
-                    
-                    if(mark !== boardArray[i][j].getValue())
-                        continue outerRowLoop;
+                    const token = boardArray[i][0].getValue();
+                    for(let j = 1; j < 3; j++)
+                    {
+                        if(boardArray[i][j].getValue() === null)
+                            continue outerRowLoop;
+                        
+                        if(token !== boardArray[i][j].getValue())
+                            continue outerRowLoop;
+                    }
+                    match = `row${i}`;
+                    return {activePlayer, match};
                 }
-                console.log(`${activePlayer.playerName} wins!`);
-                return activePlayer;
-            }
 
 outerColumnLoop:    for(let i = 0; i < 3; i++)
                     {
-                        const mark = boardArray[0][i].getValue();
+                        const token = boardArray[0][i].getValue();
                         for(let j = 1; j < 3; j++)
                         {
                             if(boardArray[j][i].getValue() === null)
                                 continue outerColumnLoop; 
-                            if(mark !== boardArray[j][i].getValue())
+                            if(token !== boardArray[j][i].getValue())
                                 continue outerColumnLoop;
                         }
-                        console.log(`${activePlayer.playerName} wins!`);
-                        return activePlayer;
+                        match = `column${i}`
+                        return {activePlayer, match};
                     }
-        let mark = boardArray[0][0].getValue();
-        if(mark === boardArray[1][1].getValue() && mark === boardArray[2][2].getValue() && mark !== null)
+        let token = boardArray[0][0].getValue();
+        if(token === boardArray[1][1].getValue() && token === boardArray[2][2].getValue() && token !== null)
         {
-            console.log(`${activePlayer.playerName} wins!`);
-            return activePlayer;
+            match = `diagonal1`;
+            return {activePlayer, match};
         }
 
-        mark = boardArray[0][2].getValue();
-        if(mark === boardArray[1][1].getValue() && mark === boardArray[2][0].getValue() && mark !== null)
+        token = boardArray[0][2].getValue();
+        if(token === boardArray[1][1].getValue() && token === boardArray[2][0].getValue() && token !== null)
         {
-            console.log(`${activePlayer.playerName} wins!`);
-            return activePlayer;
+            match = `diagonal2`;
+            return {activePlayer, match};
         }
+    }
+
+    const drawCheck = () => {
+        const boardArray = board.getBoard();
+        for(let i = 0; i < 3; i++)
+        {
+            for(let j = 0; j < 3; j++)
+            {
+                if(boardArray[i][j].getValue() === null)
+                    return false;
+            }
+        }
+        return true;
     }
 
     const playRound = (row, column) => {
-        console.log(`Dropping ${getActivePlayer().playerName}'s token on ${row} row and ${column} column`);
-        board.placeMarker(row, column, getActivePlayer());
+        board.placetokener(row, column, getActivePlayer());
         if(winCheck() === undefined)
         {
             switchPlayer();
-            printNewRound();
         }  
     }
 
-    printNewRound();
-
-    return {playRound, getActivePlayer, getBoard : board.getBoard, winCheck};
+    return {playRound, getActivePlayer, getBoard : board.getBoard, winCheck, drawCheck};
 }
 
-function ScreenController(){
+(function ScreenController(){
     let game = GameController();
-
-    const turnContainer = document.querySelector(".turn");
+    
     const boardContainer = document.querySelector(".board");
     const resultContainer = document.querySelector(".result");
+    const turnContainer = document.querySelector(".turn");
     const startButton = document.querySelector(".start");
     const playerOneInput = document.querySelector("#name-one");
     const playerTwoInput = document.querySelector("#name-two");
@@ -127,11 +128,13 @@ function ScreenController(){
     startButton.addEventListener("click", () => {
         const cells = document.querySelectorAll(".cell");
         cells.forEach((cell) => cell.disabled = false);
-        const playerOneName = (playerOneInput.value || "Player One");
-        const playerTwoName = (playerTwoInput.value || "Player Two");
-        game = GameController(playerOneName, playerTwoName);
+
+        const playerOne = (playerOneInput.value || "Player One");
+        const playerTwo = (playerTwoInput.value || "Player Two");
+        game = GameController(playerOne, playerTwo);
         playerOneInput.value = "";
         playerTwoInput.value = "";
+
         updateScreen();
     })
 
@@ -159,19 +162,78 @@ function ScreenController(){
                 boardContainer.appendChild(cellButton);
             })
         })
+        
+        checkresult();
+    }
 
-        if(game.winCheck() === undefined)
+    const checkresult = () => {
+        const result = game.winCheck();
+        const activePlayer = game.getActivePlayer();
+
+        if(result === undefined)
         {
-            turnContainer.textContent = `${activePlayer.playerName}'s turn`;
-            resultContainer.textContent = "";
+            if(game.drawCheck())
+            {
+                resultContainer.textContent = `Game draw!`
+                turnContainer.textContent = "Click Start to play again."
+            }
+            else
+            {
+                turnContainer.textContent = `${activePlayer.playerName}'s turn`;
+                resultContainer.textContent = "";
+            }
         }
 
-        else{
+        else
+        {
             resultContainer.textContent = `${game.getActivePlayer().playerName} wins!`
             const cells = document.querySelectorAll(".cell");
             cells.forEach((cell) => {
                 cell.disabled = true;
             })
+
+            const index = result.match.at(-1);
+            if(result.match.includes("row"))
+            {
+                cells.forEach((cell) => {
+                    if(cell.dataset.row == index)
+                    {
+                        cell.style.backgroundColor = "yellow";
+                    }
+                })
+            }
+
+            if(result.match.includes("column"))
+            {
+                cells.forEach((cell) => {
+                    if(cell.dataset.column == index)
+                    {
+                        cell.style.backgroundColor = "yellow";
+                    }
+                })
+            }
+
+            if(result.match.includes("diagonal1"))
+            {
+                cells.forEach((cell) => {
+                    if(cell.dataset.row === cell.dataset.column)
+                    {
+                        cell.style.backgroundColor = "yellow";
+                    }
+                })
+            }
+
+            if(result.match.includes("diagonal2"))
+            {
+                cells.forEach((cell) => {
+                    if(Number(cell.dataset.row) + Number(cell.dataset.column) === 2)
+                    {
+                        cell.style.backgroundColor = "yellow";
+                    }
+                })
+            }
+
+            turnContainer.textContent = "Click Start to play again."
         }
     }
 
@@ -180,6 +242,5 @@ function ScreenController(){
     cells.forEach((cell) => { 
         cell.disabled = true;
     })
-}
-
-ScreenController();
+    turnContainer.textContent = "Click Start to play."
+})()
