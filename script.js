@@ -145,7 +145,10 @@ function ScreenController(){
             row.forEach((cell, cellIndex) => {
                 const cellButton = document.createElement("button");
                 if(cell.getValue() !== null)
+                {
                     cellButton.textContent = `${cell.getValue()}`;
+                    cellButton.disabled = true;
+                }
                 cellButton.dataset.row = rowIndex;
                 cellButton.dataset.column = cellIndex;
                 cellButton.classList.add("cell");
